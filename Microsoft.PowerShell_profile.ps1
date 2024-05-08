@@ -1,5 +1,3 @@
-oh-my-posh init pwsh --config "$env:POSH_THEMES_PATH/wholespace.omp.json" | Invoke-Expression
-
 function Show-SystemInfo() {
     $net = Get-CimInstance -ClassName Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled -eq $true }
     $net = $net | Select-Object -First 1
@@ -14,7 +12,7 @@ function Show-SystemInfo() {
 
 function Show-DriveInfo() {
     $drives = Get-PSDrive -PSProvider FileSystem
-    $consoleWidth = [console]::WindowWidth
+    # $consoleWidth = [console]::WindowWidth
     foreach($drive in $drives){
         if($null -ne $drive.Used -And $drive.Name -ne "D"){
             $total = $drive.Used + $drive.Free
@@ -31,8 +29,8 @@ function Show-DriveInfo() {
             $progressbar = "$([char]0xEE04)" * [math]::floor($usedPercent / 5) + "$([char]0xEE04)" + "$([char]0xEE01)" * [math]::floor($freePercent / 5)
             
             # Zentrierung des Texts auf 80 Zeichen Breite
-            $line = "{0} [{1}] {2}%" -f ($drive.Name + ":"), $progressbar, $usedPercent
-            $paddedLine = $line.PadLeft(($line.Length + 80) / 2)
+            # $line = "{0} [{1}] {2}%" -f ($drive.Name + ":"), $progressbar, $usedPercent
+            # $paddedLine = $line.PadLeft(($line.Length + 80) / 2)
             
             Write-Host ("      " + $drive.Name + ":") -NoNewline -ForegroundColor Gray
             Write-Host " $([char]0xEE03)" -NoNewline -ForegroundColor $barColor
