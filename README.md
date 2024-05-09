@@ -11,9 +11,15 @@ For the complete coolness factor take a look at [OH-MY-POSH](https://ohmyposh.de
 - Nerd Font
     * Some styles require a Nerd Font. 
 
+### Disclaimer
+
+We are not responsible for any issues or damages that may occur during or as a result of using this installer. Use at your own risk.
+
 ### Installation
 
 > **_NOTE:_**  If you use it with oh-my-posh just put the line for it over or under the script
+
+> **_NOTE:_**  You can use the installer but its still WIP so if it doesn't work please report it or ignore it :)
 
 1. open profile file of your powershell
 ```powershell
@@ -49,8 +55,11 @@ notepad $PROFILE
         }
     }
     ```
-    * If you use the normal Powershell rightclick at the top and select "Properties". In the Properties select the tab "Font" and select your Font there.
+    * If you use the normal Powershell rightclick the title bar and select "Properties". In the Properties select the tab "Font" and select your Font there.
     
+> **_NOTE:_** If you use Visual Studio Code or any other IDE you need to select the Nerd Font in there too.
+
+> **_Warning:_** It is a little bugged in some IDEs
 
 ### Made by
 - Popa_42
