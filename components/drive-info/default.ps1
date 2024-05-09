@@ -1,5 +1,6 @@
 $drives = Get-PSDrive -PSProvider FileSystem
 # $consoleWidth = [console]::WindowWidth
+Write-Host ("    Drives") -ForegroundColor White
 foreach($drive in $drives){
     if($null -ne $drive.Used -And $drive.Name -ne "D"){
         $total = $drive.Used + $drive.Free
@@ -18,7 +19,7 @@ foreach($drive in $drives){
         # Zentrierung des Texts auf 80 Zeichen Breite
         # $line = "{0} [{1}] {2}%" -f ($drive.Name + ":"), $progressbar, $usedPercent
         # $paddedLine = $line.PadLeft(($line.Length + 80) / 2)
-        
+
         Write-Host ("      " + $drive.Name + ":") -NoNewline -ForegroundColor Gray
         Write-Host " $([char]0xEE03)" -NoNewline -ForegroundColor $barColor
         Write-Host $progressbar -NoNewline -ForegroundColor $barColor

@@ -1,6 +1,7 @@
 function Show-DriveInfo() {
     $drives = Get-PSDrive -PSProvider FileSystem
     # $consoleWidth = [console]::WindowWidth
+    Write-Host ("    Drives") -ForegroundColor White
     foreach($drive in $drives){
         if($null -ne $drive.Used -And $drive.Name -ne "D"){
             $total = $drive.Used + $drive.Free
