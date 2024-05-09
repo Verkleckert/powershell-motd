@@ -1,324 +1,151 @@
 $settingsPath = ".\settings.json"
+$filePath = $PROFILE
 
 $defaultSettings = @{
-    header = "default"
-    header_enabled = $true
-    drive_info = "default"
-    drive_info_enabled = $true
-    system_info = "default"
-    system_info_enabled = $true
-    order = @(1, 2, 3)
+    "1" = @{type = "newline"}
+    "2" = @{type = "header"; name = "default"}
+    "3" = @{type = "newline"}
+    "4" = @{type = "newline"}
+    "5" = @{type = "system-info"; name = "default"}
+    "6" = @{type = "newline"}
+    "7" = @{type = "newline"}
+    "8" = @{type = "drive-info"; name = "default"}
+    "9" = @{type = "newline"}
 }
 
-# Order
-#
-# 1 = Header
-# 2 = Drive Info
-# 3 = System Info
-
-$indexes = @{
-    1 = "Header"
-    2 = "Drive Info"
-    3 = "System Info"
-}
-
+# Ensure settings file exists before proceeding
 if (-Not (Test-Path $settingsPath)) {
     $defaultSettings | ConvertTo-Json -Depth 5 | Set-Content $settingsPath
 }
 
+# Load settings from the file
 $settings = Get-Content $settingsPath -Raw | ConvertFrom-Json
 
 function saveSettings {
     $settings | ConvertTo-Json -Depth 5 | Set-Content $settingsPath
 }
 
+function addNewItem {
+    # TODO Check if at least one value in settings
+    $position = Read-Host "Enter the position where to insert the new item"
 
-function Show-MainMenu {
-    $header_color = if ($settings.header_enabled -eq $true ) { 'Green' } else { 'Red' }
-    $drive_info_color = if ($settings.drive_info_enabled -eq $true ) { 'Green' } else { 'Red' }
-    $system_info_color = if ($settings.system_info_enabled -eq $true ) { 'Green' } else { 'Red' }
-    
-    Clear-Host
-    Write-Host "============== Main Menu =============="
-    Write-Host "1: " -NoNewline
-    Write-Host "Header" -ForegroundColor $header_color
-    Write-Host "2: " -NoNewline
-    Write-Host "Drive info" -ForegroundColor $drive_info_color
-    Write-Host "3: " -NoNewline
-    Write-Host "System info" -ForegroundColor $system_info_color
-    Write-Host "10: Change order"
-    Write-Host "11: Apply changes"
-    Write-Host "Q: Quit"
-    Write-Host "======================================="
-}
-
-function ShowAll-Headers {
-    $scriptFiles = Get-ChildItem -Path ".\components\header" -Filter "*.ps1"
-    
-    Clear-Host
-    
-    foreach ($file in $scriptFiles) {
-        . $file.FullName
-        
-        if (Test-Path function:\Show-Header) {
-            Write-Host $file.BaseName
-            Write-Host ""
-            Show-Header
-            Write-Host ""
-        } else {
-            Write-Host "Function 'Show-Header' not found in file: $($file.Name)"
-        }
-        
-        Remove-Item function:\Show-Header -ErrorAction SilentlyContinue
+    if (-not ($position -match '^\d+$')) {
+        Write-Host "Invalid position."
+        pause
+        return
     }
-}
 
-function ShowAll-SystemInfo {
-    $scriptFiles = Get-ChildItem -Path ".\components\sys-info" -Filter "*.ps1"
+    $type = Read-Host "Enter the type of the new item (newline, header, system-info, drive-info)"
     
-    Clear-Host
+    if (-not(@('newline', 'header', 'system-info', 'drive-info') -contains $type)) {
+        Write-Host "Invalid type."
+        pause
+        return
+    } 
     
-    foreach ($file in $scriptFiles) {
-        . $file.FullName
-        
-        if (Test-Path function:\Show-SystemInfo) {
-            Write-Host $file.BaseName
-            Write-Host ""
-            Show-SystemInfo
-            Write-Host ""
-        } else {
-            Write-Host "Function 'Show-SystemInfo' not found in file: $($file.Name)"
-        }
-        
-        Remove-Item function:\Show-SystemInfo -ErrorAction SilentlyContinue
-    }
-}
-
-function ShowAll-DriveInfos {
-    $scriptFiles = Get-ChildItem -Path ".\components\drive-info" -Filter "*.ps1"
-    
-    Clear-Host
-    
-    foreach ($file in $scriptFiles) {
-        . $file.FullName
-        
-        if (Test-Path function:\Show-DriveInfo) {
-            Write-Host $file.BaseName
-            Write-Host ""
-            Show-DriveInfo
-            Write-Host ""
-        } else {
-            Write-Host "Function 'Show-DriveInfo' not found in file: $($file.Name)"
-        }
-        
-        Remove-Item function:\Show-DriveInfo -ErrorAction SilentlyContinue
-    }
-}
-
-function Show-HeaderMenu {
-    do {
-        $header_color = if ($settings.header_enabled -eq $true ) { 'Green' } else { 'Red' }
-        $header_status = if ($settings.header_enabled -eq $true ) { 'Disable' } else { 'Enable' }
+    if ($type -ne 'newline') {
+        $scriptFiles = Get-ChildItem -Path ".\components\$type" -Filter "*.ps1"
         
         Clear-Host
-        Write-Host "============= Header Menu ============="
-        Write-Host "1: Change header theme"
-        Write-Host "2: " -NoNewline
-        Write-Host "$header_status header" -ForegroundColor $header_color
-        Write-Host "B: Back"
-        Write-Host "======================================="
         
-        $input = Read-Host "Choose an option"
-        switch ($input) {
-            '1' {
-                ShowAll-Headers
-                $input = Read-Host "Choose an option"
-                $fullPath = Join-Path -Path ".\components\header" -ChildPath "$input.ps1"
-                if (Test-Path $fullPath) {
-                    $settings.header = $input
-                    saveSettings
+        foreach ($file in $scriptFiles) {
+            Write-Host "[$($file.BaseName)]"
+            Write-Host ""
+            $preview = Get-Content ($PSScriptRoot + "\components\$type\" + $file.name) -Raw
+            Invoke-Expression $preview
+            Write-Host ""
+        }
+        $name = Read-Host "Enter the name of the new item"
+
+        if (-not ($scriptFiles.BaseName -contains $name)) {
+            Write-Host "Invalid name."
+            pause
+            return
+        }
+    }
+    if ($position -match '^\d+$' -and $settings.PSObject.Properties.Name -contains $position) {
+        $newSettings = @{}
+        $incremented = $false
+        foreach ($key in $settings.PSObject.Properties.Name | Sort-Object { [int]$_ }) {
+            if ([int]$key -ge [int]$position -and -not $incremented) {
+                $newKey = [string]([int]$key + 1)
+                $newSettings[$newKey] = $settings.$key
+            } elseif ($incremented) {
+                $newKey = [string]([int]$key + 1)
+                $newSettings[$newKey] = $settings.$key
+            } else {
+                $newSettings[$key] = $settings.$key
+            }
+            if ($key -eq $position) {
+                $incremented = $true
+                if ($type -ne 'newline') {
+                    $newSettings[$position] = @{type = $type; name = $name}
                 } else {
-                    Write-Host "Theme '$input' not found" -ForegroundColor Red
-                    pause
+                    $newSettings[$position] = @{type = "newline"}
                 }
             }
-            '2' {
-                $settings.header_enabled = -not $settings.header_enabled
-                saveSettings
-            }
-            'B' {
-                break
-            }
-            default {
-                Write-Host "Invalid input, please try again."
-                pause
-            }
         }
+        $settings = $newSettings
+        saveSettings
+    } else {
+        Write-Host "Invalid position or position does not exist."
     }
-    while ($input -ne 'B')
 }
 
-function Show-DriveInfoMenu {
-    do {
-        $drive_info_color = if ($settings.drive_info_enabled -eq $true ) { 'Green' } else { 'Red' }
-        $drive_info_status = if ($settings.drive_info_enabled -eq $true ) { 'Disable' } else { 'Enable' }
-        
-        Clear-Host
-        Write-Host "=========== Drive Info Menu ==========="
-        Write-Host "1: Change drive info theme"
-        Write-Host "2: " -NoNewline
-        Write-Host "$drive_info_status drive info" -ForegroundColor $drive_info_color
-        Write-Host "B: Back"
-        Write-Host "======================================="
-        
-        $input = Read-Host "Choose an option"
-        switch ($input) {
-            '1' {
-                ShowAll-DriveInfos
-                $input = Read-Host "Choose an option"
-                $fullPath = Join-Path -Path ".\components\drive-info" -ChildPath "$input.ps1"
-                if (Test-Path $fullPath) {
-                    $settings.drive_info = $input
-                    saveSettings
-                } else {
-                    Write-Host "Theme '$input' not found" -ForegroundColor Red
-                    pause
-                }
-            }
-            '2' {
-                $settings.drive_info_enabled = -not $settings.drive_info_enabled
-                saveSettings
-            }
-            'B' {
-                break
-            }
-            default {
-                Write-Host "Invalid input, please try again."
-                pause
+function removeItem {
+    $position = Read-Host "Enter the position of the item to remove"
+    if ($position -match '^\d+$' -and $settings.PSObject.Properties.Name -contains $position) {
+        $newSettings = @{}
+        foreach ($key in $settings.PSObject.Properties.Name | Sort-Object { [int]$_ }) {
+            if ([int]$key -lt [int]$position) {
+                $newSettings[$key] = $settings.$key
+            } elseif ([int]$key -gt [int]$position) {
+                $newKey = [string]([int]$key - 1)
+                $newSettings[$newKey] = $settings.$key
             }
         }
+        $settings = $newSettings
+        saveSettings
+    } else {
+        Write-Host "Invalid position or position does not exist."
     }
-    while ($input -ne 'B')
 }
 
-function Show-SystemInfoMenu {
-    do {
-        $system_info_color = if ($settings.system_info_enabled -eq $true ) { 'Green' } else { 'Red' }
-        $system_info_status = if ($settings.system_info_enabled -eq $true ) { 'Disable' } else { 'Enable' }
-        
-        Clear-Host
-        Write-Host "========== System Info Menu ===========" # FIXME one longer on the right than on the left
-        Write-Host "1: Change system info theme"
-        Write-Host "2: " -NoNewline
-        Write-Host "$system_info_status system info" -ForegroundColor $system_info_color
-        Write-Host "B: Back"
-        Write-Host "======================================="
-        
-        $input = Read-Host "Choose an option"
-        switch ($input) {
-            '1' {
-                ShowAll-SystemInfo
-                $input = Read-Host "Choose an option"
-                $fullPath = Join-Path -Path ".\components\sys-info" -ChildPath "$input.ps1"
-                if (Test-Path $fullPath) {
-                    $settings.system_info = $input
-                    saveSettings
-                } else {
-                    Write-Host "Theme '$input' not found" -ForegroundColor Red
-                    pause
-                }
+function build {
+    $motd = ""
+    $orderedKeys = $settings.PSObject.Properties.Name | Sort-Object { [int]$_ }
+    foreach ($key in $orderedKeys) {
+        $item = $settings.$key
+        switch ($item.type) {
+            'newline' {
+                $motd += "Write-Host ''`n" 
             }
-            '2' {
-                $settings.system_info_enabled = -not $settings.system_info_enabled
-                saveSettings
+            'header' {
+                $motd += Get-Content ($PSScriptRoot + "\components\header\" + $item.name + ".ps1") -Raw
+                $motd += "`n" 
             }
-            'B' {
-                break
+            'system-info' {
+                $motd += Get-Content ($PSScriptRoot + "\components\system-info\" + $item.name + ".ps1") -Raw
+                $motd += "`n" 
             }
-            default {
-                Write-Host "Invalid input, please try again."
-                pause
+            'drive-info' {
+                $motd += Get-Content ($PSScriptRoot + "\components\drive-info\" + $item.name + ".ps1") -Raw
+                $motd += "`n" 
             }
         }
     }
-    while ($input -ne 'B')
+    return $motd
+    
 }
 
-function Show-ChangeOrderMenu {
-    do {
-        Clear-Host
-        Write-Host "============= Header Menu ============="
-        Write-Host "Available components:"
-        $sortedKeys = $indexes.Keys | Sort-Object
-        foreach ($index in $sortedKeys) {
-            Write-Host "$($index): $($indexes[$index])"
-        }
-        Write-Host "======================================="
-        Write-Host "Current Order:"
-        foreach ($index in $settings.order) {
-            Write-Host "$($index): $($indexes[$index])"
-        }
-        Write-Host "======================================="
-        Write-Host "Enter a new space separated order"
-        Write-Host "(e.g. '1 2 3') or 'B' to go back"
-        Write-Host "You need to provide all even if they"
-        Write-Host "are disabled. WIP"
-        Write-Host "======================================="
-        $input = Read-Host "Enter new order"
-        if ($input -ne 'B') {
-            $newOrder = $input -split ' ' | ForEach-Object { [int]$_ }
-            $indexSet = $indexes.Keys | Sort-Object
-            
-            # Check if all elements in newOrder are valid indexes
-            $allValidIndexes = $newOrder -match ($indexSet -join "|")
-            
-            # Check for no duplicates by comparing counts after removing duplicates
-            $uniqueOrder = $newOrder | Sort-Object -Unique
-            $hasNoDuplicates = $uniqueOrder.Count -eq $newOrder.Count
-            
-            # Check that all indexes are present by comparing the sorted and unique lists
-            $allIndexesPresent = ($uniqueOrder -join ',') -eq ($indexSet -join ',')
-            
-            if ($allValidIndexes -and $hasNoDuplicates -and $allIndexesPresent) {
-                $settings.order = $newOrder
-                saveSettings
-            }
-        }
-    }
-    while ($input -ne 'B')
+function preview {
+    $motd = build
+    Invoke-Expression $motd
+    pause
 }
 
-
-
-
-function ApplyChanges {
-    $filePath = $PROFILE
-    $newContent = @('Write-Host ""')
-    foreach ($index in $settings.order) {
-        switch ($index) {
-            1 {
-                if ($settings.header_enabled -eq $true) {
-                    $newContent += @(Get-Content ($PSScriptRoot + "\components\header\" + $settings.header + ".ps1"))
-                    $newContent += @("Show-Header")
-                    $newContent += @('Write-Host ""')
-                }
-            }
-            2 {
-                if ($settings.drive_info_enabled -eq $true) {
-                    $newContent += @(Get-Content ($PSScriptRoot + "\components\drive-info\" + $settings.drive_info + ".ps1"))
-                    $newContent += @("Show-DriveInfo")
-                    $newContent += @('Write-Host ""')
-                }
-            }
-            3 {
-                if ($settings.system_info_enabled -eq $true) {
-                    $newContent += @(Get-Content ($PSScriptRoot + "\components\sys-info\" + $settings.system_info + ".ps1"))
-                    $newContent += @("Show-SystemInfo")
-                    $newContent += @('Write-Host ""')
-                }
-            }
-        }
-    }
+function apply {
+    $motd = build
     
     $lines = Get-Content $filePath
     
@@ -333,51 +160,55 @@ function ApplyChanges {
         # Reconstruct the $lines array by concatenating parts before, between, and after the content
         $before = $lines[0..$startIndex]
         $after = $lines[($endIndex + 1)..($lines.Count - 1)]
-        $lines = $before + $newContent + $after
+        $lines = $before + $motd + $after
     } elseif ($startIndex -eq $null -or $endIndex -eq $null) {
         $lines += '# MOTD START'
-        $lines += $newContent
+        $lines += $motd
         $lines += '# MOTD END'
     }
     
     $lines | Set-Content $filePath
+    
+    Write-Host "Changes applied successfully."
+    
+    pause
 }
 
-
-
 function Main {
+    # Load settings from the file
     do {
-        Show-MainMenu
-        $input = Read-Host "Choose an option"
-        switch ($input) {
-            '1' {
-                Show-HeaderMenu
-            }
-            '2' {
-                Show-DriveInfoMenu
-            }
-            '3' {
-                Show-SystemInfoMenu
-            }
-            '10' {
-                Show-ChangeOrderMenu
-            }
-            '11' {
-                ApplyChanges
-                Write-Host "Changes applied"
-                pause
-            }
-            'Q' {
-                Write-Host "Exiting..."
-                break
-            }
-            default {
-                Write-Host "Invalid input, please try again."
-                pause
+        $settings = Get-Content $settingsPath -Raw | ConvertFrom-Json
+        Clear-Host
+        Write-Host "================ MOTD ================"
+        $orderedKeys = $settings.PSObject.Properties.Name | Sort-Object { [int]$_ }
+        foreach ($key in $orderedKeys) {
+            $item = $settings.$key
+            Write-Host "$($key): " -NoNewline
+            switch ($item.type) {
+                'newline' { Write-Host "" }
+                'header' { Write-Host "Header: $($item.name)" }
+                'system-info' { Write-Host "System Info: $($item.name)" }
+                'drive-info' { Write-Host "Drive Info: $($item.name)" }
             }
         }
-    }
-    while ($input -ne 'Q')
+        Write-Host "======================================="
+        Write-Host "Enter 'Q' to quit"
+        Write-Host "Enter 'A' to apply changes"
+        Write-Host "Enter 'P' for a preview"
+        Write-Host "Enter '+' to add a new item"
+        Write-Host "Enter '-' to remove an item"
+        Write-Host "======================================="
+        
+        $userInput = Read-Host "Enter your choice"
+        switch ($userInput) {
+            'Q' { break }
+            'A' { apply }
+            'P' { preview }
+            '+' { addNewItem }
+            '-' { removeItem }
+            default { Write-Host "Invalid input, please try again." }
+        }
+    } while ($userInput -ne 'Q')
 }
 
 Main
