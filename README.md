@@ -33,6 +33,8 @@ notepad $PROFILE
 . $PROFILE
 ```
 
+4. Powershell has a default kind of MOTD called logo. to disable it you need to add the parameter `-nologo` to the link or in the options of your Terminal
+
 ### Nerd Font
 
 1. Chose a Nerd Font you like. You can choose one here: [Nerdfonts](https://www.nerdfonts.com/font-downloads)

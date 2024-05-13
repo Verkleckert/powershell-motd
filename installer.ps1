@@ -162,7 +162,9 @@ function apply {
         $after = $lines[($endIndex + 1)..($lines.Count - 1)]
         $lines = $before + $motd + $after
     } elseif ($startIndex -eq $null -or $endIndex -eq $null) {
+        $lines += "`r`n"
         $lines += '# MOTD START'
+        $lines += "`r`n"
         $lines += $motd
         $lines += '# MOTD END'
     }
